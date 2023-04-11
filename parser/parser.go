@@ -3,7 +3,10 @@ package parser
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
+
+	"github.com/tayalone/go-sql-rql/parser/param"
 )
 
 var mockAllFields = map[string]interface{}{
@@ -17,7 +20,7 @@ var mockDisabledFields = map[string]interface{}{
 
 // Parser interface
 type Parser interface {
-	Parse(q string)
+	Parse(q string) param.QueryParams
 }
 
 type parser struct {
@@ -28,20 +31,15 @@ type parser struct {
 
 // New Query Parser
 func New(defaultLimit *int) Parser {
-	// myMap := map[string]bool{}
-
-	// myMap["1"] = 1
-
-	return parser{
+	return &parser{
 		defaultLimit:   defaultLimit,
 		allFields:      mockAllFields,
 		disabledFields: map[string]interface{}{},
 	}
 }
 
-func (p parser) getFields(str string) []string {
+func (p *parser) getFields(str string) []string {
 	expectFields := strings.Split(str, ",")
-
 	allFields := []string{}
 	if str == "" || len(expectFields) == 0 {
 		for key := range p.allFields {
@@ -49,7 +47,6 @@ func (p parser) getFields(str string) []string {
 		}
 		return allFields
 	}
-
 	for _, v := range expectFields {
 		_, inAllField := p.allFields[v]
 
@@ -62,27 +59,38 @@ func (p parser) getFields(str string) []string {
 	return allFields
 }
 
-func (p parser) Parse(q string) {
+func (p *parser) getSkip(str string) int {
+	tmp, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0
+	}
+	fmt.Println(tmp)
+	skip := int(tmp)
+	fmt.Println(skip)
+
+	if skip < 0 {
+		return 0
+	}
+	return int(skip)
+}
+
+func (p parser) Parse(q string) param.QueryParams {
 	params, err := url.ParseQuery(q)
 	if err != nil {
 		panic("query format error")
 	}
 
+	qp := param.New()
+
 	if v := params.Get("fields"); v != "" {
-		fmt.Println("action: fields", v)
+		fields := p.getFields(v)
+		qp.SetFields(fields)
 	}
 
-	// fmt.Println("q is", q)
-	// actions := strings.Split(q, "&")
-	// for i, a := range actions {
-	// 	fmt.Printf("key no: %d, action: %s\n", i, a)
+	if v := params.Get("skip"); v != "" {
+		skip := p.getSkip(v)
+		qp.SetSkip(skip)
+	}
 
-	// 	payloads := strings.Split(a, "=")
-	// 	if len(payloads) != 2 {
-	// 		panic("query action invalid format")
-	// 	}
-	// 	key := payloads[0]
-	// 	value := payloads[1]
-
-	// }
+	return qp
 }

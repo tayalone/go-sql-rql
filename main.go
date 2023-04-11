@@ -1,11 +1,17 @@
 package main
 
-import "github.com/tayalone/go-sql-rql/parser"
+import (
+	"fmt"
+
+	"github.com/tayalone/go-sql-rql/parser"
+)
 
 func main() {
-	q := `fields=id%2Cname&sort=id%2C-created_at&skip=0&limit=10`
+	q := `fields=id%2Cname&sort=id%2C-created_at&skip=112&limit=10`
 
 	p := parser.New(nil)
+	qp := p.Parse(q)
 
-	p.Parse(q)
+	fmt.Println("fields", qp.GetFields())
+	fmt.Println("skip", qp.GetSkip())
 }
