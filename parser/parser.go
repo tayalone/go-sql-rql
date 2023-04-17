@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -64,14 +63,28 @@ func (p *parser) getSkip(str string) int {
 	if err != nil {
 		return 0
 	}
-	fmt.Println(tmp)
 	skip := int(tmp)
-	fmt.Println(skip)
-
 	if skip < 0 {
 		return 0
 	}
 	return int(skip)
+}
+
+func (p *parser) getLimit(str string) *int {
+	tmp, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return p.defaultLimit
+	}
+	limit := int(tmp)
+	if limit < 0 {
+		return p.defaultLimit
+	}
+	if p.defaultLimit == nil {
+		return &limit
+	} else if limit > *p.defaultLimit {
+		return p.defaultLimit
+	}
+	return &limit
 }
 
 func (p parser) Parse(q string) param.QueryParams {
@@ -90,6 +103,11 @@ func (p parser) Parse(q string) param.QueryParams {
 	if v := params.Get("skip"); v != "" {
 		skip := p.getSkip(v)
 		qp.SetSkip(skip)
+	}
+
+	if v := params.Get("limit"); v != "" {
+		limit := p.getLimit(v)
+		qp.SetLimit(limit)
 	}
 
 	return qp
